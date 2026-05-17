@@ -19,4 +19,6 @@ class LinkedList:
                 current = current.next
             current.next = new_node
         self.size += 1
+
+    
         
