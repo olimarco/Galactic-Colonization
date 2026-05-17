@@ -36,4 +36,5 @@ class LinkedList:
             current = current.next
         return False
         
-        
+    def size(self):
+        return self.size    
