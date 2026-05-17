@@ -27,5 +27,13 @@ class LinkedList:
         for _ in range(index):
             current = current.next
         return current.data
+    
+    def contains(self, data):
+        current = self.head
+        while current != None:
+            if current.data == data:
+                return True
+            current = current.next
+        return False
         
         
