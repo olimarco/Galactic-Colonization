@@ -108,3 +108,15 @@ class MinPriorityQueue:
     
     def right(self, i):
         return 2 * i + 2
+    
+    def min_heapify(self, i):
+        left = self.left(i)
+        right = self.right(i)
+        smallest = i
+        if left < self.size and self.A.get(left).priority < self.A.get(smallest).priority:
+            smallest = self.left
+        if right < self.size and self.A.get(right).priority < self.A.get(smallest).priority:
+            smallest = self.right
+        if smallest != i:
+            self.A[i], self.A[smallest] = self.A[smallest], self.A[i]
+            self.min_heapify(smallest)
