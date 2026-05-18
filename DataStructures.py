@@ -38,3 +38,20 @@ class LinkedList:
         
     def size(self):
         return self.size    
+    
+
+    class Queue:
+        def __init__(self):
+            self.head = None
+            self.tail = None
+            self.size = 0
+        
+        def enqueue(self, item):
+            new_node = Node(item)
+            if not self.head:
+                self.head = new_node
+                self.tail = new_node
+            else:
+                self.tail.next = new_node
+                self.tail = new_node
+            self.size += 1
