@@ -114,11 +114,12 @@ class MinPriorityQueue:
         right = self.right(i)
         smallest = i
         if left < self.size and self.A.get(left).priority < self.A.get(smallest).priority:
-            smallest = self.left
+            smallest = left
         if right < self.size and self.A.get(right).priority < self.A.get(smallest).priority:
-            smallest = self.right
+            smallest = right
         if smallest != i:
-            self.A[i], self.A[smallest] = self.A[smallest], self.A[i]
+            self.A.set(i, self.A.get(smallest))
+            self.A.set(smallest, self.A.get(i))
             self.min_heapify(smallest)
 
     def minimum(self):
@@ -137,3 +138,12 @@ class MinPriorityQueue:
             self.min_heapify(0)
         return min_node.data
     
+    def decrease_key(self, i, k):
+        if k > self.A.get(i).priority:
+            raise ValueError("La nuova priorità è maggiore di quella attuale")
+        self.A.get(i).priority = k
+        while i > 0 and self.A.get(self.parent(i)).priority > self.A.get(i).priority:
+            parent = self.parent(i)
+            self.A.set(i, self.A.get(parent))
+            self.A.set(parent, self.A.get(i))
+            i = parent
