@@ -200,5 +200,8 @@ class HashTable:
         if entry != None:
             return entry.value
         return None
+    
+    def contains(self, key):
+        return self.search_entry(key) != None
 
     
