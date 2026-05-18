@@ -174,3 +174,15 @@ class HashTable:
 
     def hash(self, key):
         return hash(key) % self.capacity
+    
+    def put(self, key, value):
+        index = self.hash(key)
+        bucket = self.buckets.get(index)
+        current = bucket.head
+        while current != None:
+            if current.data.key == key:
+                current.data.value = value
+                return
+            current = current.next
+        bucket.add(HashEntry(key, value))
+        self.size += 1
