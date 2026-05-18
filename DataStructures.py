@@ -125,3 +125,15 @@ class MinPriorityQueue:
         if self.size == 0:
             return None
         return self.A.get(0)
+
+    def extract_min(self):
+        if self.size == 0:
+            return None
+        min_node = self.minimum()
+        self.A.set(0, self.A.get(self.size - 1))
+        self.A.set(self.size - 1, None)
+        self.size -= 1
+        if self.size > 0:
+            self.min_heapify(0)
+        return min_node.data
+    
