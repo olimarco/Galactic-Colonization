@@ -172,4 +172,5 @@ class HashTable:
             self.buckets.set(i, LinkedList())
         self.size = 0
 
-    
+    def hash(self, key):
+        return hash(key) % self.capacity
