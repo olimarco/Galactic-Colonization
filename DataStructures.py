@@ -93,3 +93,18 @@ class Array:
 
     def length(self):
         return self.size
+    
+
+class MinPriorityQueue:
+    def __init__(self, max_size):
+        self.A = Array(max_size)
+        self.size = 0
+    
+    def parent(self, i):
+        return (i - 1) // 2
+    
+    def left(self, i):
+        return 2 * i + 1
+    
+    def right(self, i):
+        return 2 * i + 2
