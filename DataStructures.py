@@ -1,3 +1,4 @@
+
 class Node:
     def __init__(self, data):
         self.data = data
@@ -175,14 +176,23 @@ class HashTable:
     def hash(self, key):
         return hash(key) % self.capacity
     
-    def put(self, key, value):
+    def search_entry(self, key):
         index = self.hash(key)
         bucket = self.buckets.get(index)
         current = bucket.head
         while current != None:
             if current.data.key == key:
-                current.data.value = value
-                return
+                return current.data
             current = current.next
-        bucket.add(HashEntry(key, value))
-        self.size += 1
+        return None
+    
+    def put(self, key, value):
+        is_entry = self.search_entry(key)
+        if is_entry != None:
+            is_entry.value = value
+        else:
+            index = self.hash(key)
+            self.buckets.get(index).add(HashEntry(key, value))
+            self.size += 1
+
+    
