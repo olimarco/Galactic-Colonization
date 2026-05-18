@@ -65,3 +65,6 @@ class LinkedList:
                 self.tail = None
             self.size -= 1
             return dequeued_item
+        
+        def is_empty(self):
+            return self.size == 0
