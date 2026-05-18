@@ -147,3 +147,12 @@ class MinPriorityQueue:
             self.A.set(i, self.A.get(parent))
             self.A.set(parent, self.A.get(i))
             i = parent
+
+    def insert(self, x, k):
+        if self.size == self.A.length():
+            raise OverflowError("La coda di priorità è piena")
+        new_node = HeapNode(float("inf"), x)
+        self.A.set(self.size, new_node)
+        new_index = self.size
+        self.size += 1
+        self.decrease_key(new_index, k)
