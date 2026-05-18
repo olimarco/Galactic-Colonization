@@ -156,3 +156,11 @@ class MinPriorityQueue:
         new_index = self.size
         self.size += 1
         self.decrease_key(new_index, k)
+
+
+class HashEntry:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+
