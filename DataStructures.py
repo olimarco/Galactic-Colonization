@@ -164,3 +164,12 @@ class HashEntry:
         self.value = value
 
 
+class HashTable:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.buckets = Array(capacity)
+        for i in range(capacity):
+            self.buckets.set(i, LinkedList())
+        self.size = 0
+
+    
