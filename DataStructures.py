@@ -120,3 +120,8 @@ class MinPriorityQueue:
         if smallest != i:
             self.A[i], self.A[smallest] = self.A[smallest], self.A[i]
             self.min_heapify(smallest)
+
+    def minimum(self):
+        if self.size == 0:
+            return None
+        return self.A.get(0)
