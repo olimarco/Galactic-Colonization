@@ -194,5 +194,11 @@ class HashTable:
             index = self.hash(key)
             self.buckets.get(index).add(HashEntry(key, value))
             self.size += 1
+    
+    def get(self, key):
+        entry = self.search_entry(key)
+        if entry != None:
+            return entry.value
+        return None
 
     
