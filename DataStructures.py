@@ -55,3 +55,13 @@ class LinkedList:
                 self.tail.next = new_node
                 self.tail = new_node
             self.size += 1
+
+        def dequeue(self):
+            if not self.head:
+                return None
+            dequeued_item = self.head.data
+            self.head = self.head.next
+            if not self.head:
+                self.tail = None
+            self.size -= 1
+            return dequeued_item
