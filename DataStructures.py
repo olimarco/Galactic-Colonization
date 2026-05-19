@@ -220,4 +220,11 @@ class Graph:
             self.adjacency_list.put(vertex, LinkedList())
             self.all_vertices.add(vertex)
 
+    def add_edge(self, source, destination, weight):
+        self.add_vertex(source)
+        self.add_vertex(destination)
+        source_edges = self.adjacency_list.get(source)
+        new_edge = Edge(destination, weight)
+        source_edges.add(new_edge)
+
     
