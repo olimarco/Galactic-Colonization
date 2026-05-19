@@ -40,34 +40,37 @@ class LinkedList:
         return self.size    
     
 
-class Queue:
-    def __init__(self):
-        self.head = None
-        self.tail = None
-        self.size = 0
-        
-    def enqueue(self, item):
-        new_node = Node(item)
-        if not self.head:
-            self.head = new_node
-            self.tail = new_node
-        else:
-            self.tail.next = new_node
-            self.tail = new_node
-        self.size += 1
+class DisjointSet:
+    def __init__(self, max_size):
+        self.parent = HashTable(max_size)
+        self.rank = HashTable(max_size)
 
-    def dequeue(self):
-        if not self.head:
-            return None
-        dequeued_item = self.head.data
-        self.head = self.head.next
-        if not self.head:
-            self.tail = None
-        self.size -= 1
-        return dequeued_item
-        
-    def is_empty(self):
-        return self.size == 0
+    def make_set(self, representative):
+        if not self.parent.contains(representative):
+            self.parent.put(representative, representative)
+            self.rank.put(representative, 0)
+
+    def find_set(self, representative):
+        curr_parent = self.parent.get(representative)
+        if curr_parent != representative:
+            root = self.find_set(curr_parent)
+            self.parent.put(representative, root)
+            return root
+        return representative
+    
+    def union(self, repr1, repr2):
+        root1 = self.find_set(repr1)
+        root2 = self.find_set(repr2)
+        if root1 == root2:
+            return
+        rank1 = self.rank.get(root1)
+        rank2 = self.rank.get(root2)
+        if rank1 >= rank2:
+            self.parent.put(root2, root1)
+            if rank1 == rank2:
+                self.rank.put(root1, rank1 + 1)
+        else:
+            self.parent.put(root1, root2)
     
 
 class HeapNode(Node):
@@ -118,8 +121,9 @@ class MinPriorityQueue:
         if right < self.size and self.A.get(right).priority < self.A.get(smallest).priority:
             smallest = right
         if smallest != i:
+            temp = self.A.get(i)
             self.A.set(i, self.A.get(smallest))
-            self.A.set(smallest, self.A.get(i))
+            self.A.set(smallest, temp)
             self.min_heapify(smallest)
 
     def minimum(self):
@@ -144,14 +148,15 @@ class MinPriorityQueue:
         self.A.get(i).priority = k
         while i > 0 and self.A.get(self.parent(i)).priority > self.A.get(i).priority:
             parent = self.parent(i)
+            temp = self.A.get(i)
             self.A.set(i, self.A.get(parent))
-            self.A.set(parent, self.A.get(i))
+            self.A.set(parent, temp)
             i = parent
 
     def insert(self, x, k):
         if self.size == self.A.length():
             raise OverflowError("La coda di priorità è piena")
-        new_node = HeapNode(float("inf"), x)
+        new_node = HeapNode(x, float("inf"))
         self.A.set(self.size, new_node)
         new_index = self.size
         self.size += 1
@@ -173,8 +178,13 @@ class HashTable:
         self.size = 0
 
     def hash(self, key):
-        return hash(key) % self.capacity
-    
+        key = str(key)
+        hash_value = 0
+        multiplier = 31
+        for char in key:
+            hash_value = (hash_value * multiplier) + ord(char)
+        return hash_value % self.capacity
+
     def search_entry(self, key):
         index = self.hash(key)
         bucket = self.buckets.get(index)
