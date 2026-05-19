@@ -227,4 +227,7 @@ class Graph:
         new_edge = Edge(destination, weight)
         source_edges.add(new_edge)
 
-    
+    def get_adjacent_vertices(self, vertex):
+        if not self.adjacency_list.contains(vertex):
+            return None
+        return self.adjacency_list.get(vertex)
