@@ -1,4 +1,3 @@
-
 class Node:
     def __init__(self, data):
         self.data = data
@@ -203,5 +202,11 @@ class HashTable:
     
     def contains(self, key):
         return self.search_entry(key) != None
+
+
+class Edge:
+    def __init__(self, destination, weight):
+        self.destination = destination
+        self.weight = weight
 
     
