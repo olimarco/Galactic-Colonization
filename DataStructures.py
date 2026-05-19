@@ -209,4 +209,15 @@ class Edge:
         self.destination = destination
         self.weight = weight
 
+
+class Graph:
+    def __init__(self, capacity):
+        self.adjacency_list = HashTable(capacity)
+        self.all_vertices = LinkedList()
+    
+    def add_vertex(self, vertex):
+        if not self.adjacency_list.contains(vertex):
+            self.adjacency_list.put(vertex, LinkedList())
+            self.all_vertices.add(vertex)
+
     
