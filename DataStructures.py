@@ -231,3 +231,6 @@ class Graph:
         if not self.adjacency_list.contains(vertex):
             return None
         return self.adjacency_list.get(vertex)
+    
+    def get_vertices(self):
+        return self.all_vertices
