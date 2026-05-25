@@ -1,3 +1,4 @@
+import random
 from DataStructures import Graph, LinkedList
 
 
@@ -54,7 +55,7 @@ class Spaceship:
 
 class UniverseGraph:
 
-    def __init__ (self, capacity = 100):
+    def __init__ (self, capacity=100):
         self.core_graph = Graph(capacity)
         self.launch_point = None
 
@@ -66,7 +67,7 @@ class UniverseGraph:
         self.core_graph.add_edge(dest, source, fuel_cost)
 
     def get_connected_sectors(self, s):
-        edges = self.core_graph.get_adjacent_vertices (s)
+        edges = self.core_graph.get_adjacent_vertices(s)
         connected = LinkedList()
 
         if edges is None:
@@ -80,10 +81,61 @@ class UniverseGraph:
         return connected
 
     def generate_procedural_universe(self, size):
-        pass
+        sectors = LinkedList()
+
+        for i in range(size):
+            sector = Sector(
+                "S" + str(i),
+                random.randint(0, 100),
+                random.randint(0, 100)
+            )
+            self.add_sector(sector)
+            sectors.add(sector)
+
+            if i == 0:
+                self.launch_point = sector
+
+        for i in range(size - 1):
+            source = sectors.get(i)
+            dest = sectors.get(i + 1)
+            fuel_cost = random.randint(5, 30)
+            self.add_hyperspace_route(source, dest, fuel_cost)
+
+        extra_routes = size
+
+        for _ in range(extra_routes):
+            source_index = random.randint(0, size - 1)
+            dest_index = random.randint(0, size - 1)
+
+        if source_index != dest_index:
+            source = sectors.get(source_index)
+            dest = sectors.get(dest_index)
+
+            if not self.are_connected(source, dest):
+                if self.count_connections(source) < 5 and self.count_connections(dest) < 5:
+                    fuel_cost = random.randint(5, 30)
+                    self.add_hyperspace_route(source, dest, fuel_cost)
+
+    def count_connections(self, s):
+        connected = self.get_connected_sectors(s)
+        return connected.size
 
     def ensure_connectivity(self):
-        pass
+        vertices = self.core_graph.get_vertices()
+
+        for i in range(vertices.size - 1):
+            source = vertices.get(i)
+            dest = vertices.get(i + 1)
+
+            if not self.are_connected(source, dest):
+                fuel_cost = random.randint(5, 30)
+                self.add_hyperspace_route(source, dest, fuel_cost)
 
     def enforce_max_connections(self):
-        pass
+        vertices = self.core_graph.get_vertices()
+
+        for i in range(vertices.size):
+            sector = vertices.get(i)
+
+            if self.count_connections(sector) > 5:
+                raise ValueError("Sector has more than 5 connections")
