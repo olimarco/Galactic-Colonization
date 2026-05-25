@@ -1,3 +1,6 @@
+from DataStructures import Graph, LinkedList
+
+
 class Sector:
     def __init__(self, id, danger_level, resources):
         self.id = id
@@ -46,4 +49,41 @@ class Spaceship:
         self.collected_resources += amount
 
     def is_operational(self):
-        return self.fuel
+        return self.fuel > 0
+
+
+class UniverseGraph:
+
+    def __init__ (self, capacity = 100):
+        self.core_graph = Graph(capacity)
+        self.launch_point = None
+
+    def add_sector(self, s):
+        self.core_graph.add_vertex(s)
+
+    def add_hyperspace_route(self, source, dest, fuel_cost):
+        self.core_graph.add_edge(source, dest, fuel_cost)
+        self.core_graph.add_edge(dest, source, fuel_cost)
+
+    def get_connected_sectors(self, s):
+        edges = self.core_graph.get_adjacent_vertices (s)
+        connected = LinkedList()
+
+        if edges is None:
+            return connected
+
+        current = edges.head
+        while current != None:
+            connected.add(current.data.destination)
+            current = current.next
+
+        return connected
+
+    def generate_procedural_universe(self, size):
+        pass
+
+    def ensure_connectivity(self):
+        pass
+
+    def enforce_max_connections(self):
+        pass
