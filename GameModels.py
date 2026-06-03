@@ -1,5 +1,5 @@
 import random
-from DataStructures import Graph, LinkedList
+from DataStructures import Graph, LinkedList, MinPriorityQueue, DisjointSet
 
 
 class Sector:
@@ -66,10 +66,13 @@ class UniverseGraph:
         self.core_graph.add_edge(source, dest, fuel_cost)
         self.core_graph.add_edge(dest, source, fuel_cost)
 
+    def are_connected(self, source, dest):
+        connected = self.get_connected_sectors(source)
+        return connected.contains(dest)
+
     def get_connected_sectors(self, s):
         edges = self.core_graph.get_adjacent_vertices(s)
         connected = LinkedList()
-
         if edges is None:
             return connected
 
@@ -95,26 +98,57 @@ class UniverseGraph:
             if i == 0:
                 self.launch_point = sector
 
-        for i in range(size - 1):
-            source = sectors.get(i)
-            dest = sectors.get(i + 1)
-            fuel_cost = random.randint(5, 30)
-            self.add_hyperspace_route(source, dest, fuel_cost)
+        possible_edges = MinPriorityQueue(size * size)
 
-        extra_routes = size
+        for i in range (size):
+            for j in range(i + 1, size):
+                source = sectors.get(i)
+                dest = sectors.get(j)
+                fuel_cost = random.randint(5, 30)
+                possible_edges.insert((source, dest, fuel_cost), fuel_cost)
 
-        for _ in range(extra_routes):
+        disjoint_set = DisjointSet(size * 2)
+
+        for i in range(size):
+            disjoint_set.make_set(sectors.get(i))
+
+        edges_added = 0
+
+        while edges_added < size - 1:
+            edge = possible_edges.extract_min()
+
+            if edge is None:
+                break
+
+            source, dest, fuel_cost = edge
+
+            if disjoint_set.find_set(source) != disjoint_set.find_set(dest):
+                if self.count_connections(source) < 5 and self.count_connections(dest) < 5:
+                    self.add_hyperspace_route(source, dest, fuel_cost)
+                    disjoint_set.union(source, dest)
+                    edges_added += 1
+
+        extra_edges = size // 2
+        attempts = 0
+        max_attempts = size * size
+
+        while extra_edges > 0 and attempts < max_attempts:
             source_index = random.randint(0, size - 1)
             dest_index = random.randint(0, size - 1)
+            attempts += 1
 
-        if source_index != dest_index:
-            source = sectors.get(source_index)
-            dest = sectors.get(dest_index)
+            if source_index != dest_index:
+                source = sectors.get(source_index)
+                dest = sectors.get(dest_index)
 
-            if not self.are_connected(source, dest):
-                if self.count_connections(source) < 5 and self.count_connections(dest) < 5:
-                    fuel_cost = random.randint(5, 30)
-                    self.add_hyperspace_route(source, dest, fuel_cost)
+                if not self.are_connected(source, dest):
+                    if self.count_connections(source) < 5 and self.count_connections(dest) < 5:
+                        fuel_cost = random.randint(5, 30)
+                        self.add_hyperspace_route(source, dest, fuel_cost)
+                        extra_edges -= 1
+            
+        self.enforce_max_connections()
+        
 
     def count_connections(self, s):
         connected = self.get_connected_sectors(s)
