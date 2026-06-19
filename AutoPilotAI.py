@@ -23,7 +23,7 @@ class AutoPilotAI:
             nodo_successivo = arco.data.destination
             costo = arco.data.weight
 
-            if costo <= fuel_left and nodo_successivo.resources != 0:
+            if costo <= fuel_left:
                 #DA CAMBIARE, NON DEVE ESSERCI SEMPRE LA PENALITà, MA DEVE ESSERE UNA PROBABILITà
                 penalita = (nodo_successivo.danger_level / 100.0) * self.COSTO_MEDIO_IMPREVISTO
                 carburante_dopo = fuel_left - costo - penalita
