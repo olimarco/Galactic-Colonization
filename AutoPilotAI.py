@@ -23,7 +23,7 @@ class AutoPilotAI:
             nodo_successivo = arco.data.destination
             costo = arco.data.weight
 
-            if costo <= fuel_left and nodo_successivo.resources != 0:
+            if costo <= fuel_left:
                 carburante_dopo = fuel_left - costo
 
                 pericolo = 1.0 - (nodo_successivo.danger_level / 100.0)
@@ -56,18 +56,19 @@ class AutoPilotAI:
             nodo_successivo = arco.data.destination
             costo = arco.data.weight
 
-        if costo <= carburante and visitati.get(nodo_successivo.id) is not True:
-            carburante_dopo = carburante - costo
+            if costo <= carburante and visitati.get(nodo_successivo.id) is not True:
+                carburante_dopo = carburante - costo
 
-            fattore_sicurezza = 1.0 - (nodo_successivo.danger_level / 100.0)
-            risorse_pesate = nodo_successivo.resources * fattore_sicurezza
+                fattore_sicurezza = 1.0 - (nodo_successivo.danger_level / 100.0)
+                risorse_pesate = nodo_successivo.resources * fattore_sicurezza
 
-            visitati.put(nodo_successivo.id, True)
-            risorse = risorse_pesate + self._backtracking(nodo_successivo, carburante_dopo, visitati)
-            visitati.put(nodo_successivo.id, False)
+                visitati.put(nodo_successivo.id, True)
+                risorse = risorse_pesate + self._backtracking(nodo_successivo, carburante_dopo, visitati)
+                visitati.put(nodo_successivo.id, False)
 
-            if risorse > migliore:
-                migliore = risorse
+                if risorse > migliore:
+                    migliore = risorse
+
             arco = arco.next
 
         return migliore
