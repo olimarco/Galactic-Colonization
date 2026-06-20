@@ -21,11 +21,14 @@ class GameEngine:
         self.turn_loop()
 
     def turn_loop(self):
-        while self.ship.is_operational():
+        while True:
             print("\n--- Turno di gioco ---")
             print("Settore attuale:", self.ship.current_sector.id)
             print("Carburante:", self.ship.fuel)
             print("Risorse raccolte:", self.ship.collected_resources)
+
+            if not self.ship.is_operational():
+                print("\nCarburante esaurito! Puoi consultare il catalogo o terminare.")
 
             should_continue = self.execute_user_action()
             if not should_continue:
@@ -45,9 +48,15 @@ class GameEngine:
         if choice == "1":
             self.catalog.display_catalog()
         elif choice == "2":
-            self.display_scan_report()
+            if not self.ship.is_operational():
+                print("Carburante esaurito, impossibile scansionare.")
+            else:
+                self.display_scan_report()
         elif choice == "3":
-            self.move_with_autopilot()
+            if not self.ship.is_operational():
+                print("Carburante esaurito, impossibile muoversi.")
+            else:
+                self.move_with_autopilot()
         elif choice == "4":
             return False
         else:
