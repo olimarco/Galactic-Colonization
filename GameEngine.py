@@ -55,61 +55,35 @@ class GameEngine:
 
         return True
 
-    def print_path(self):
-        print(f"\n{'=' * 50}")
-        print("  PERCORSO DELL'AUTOPILOT")
-        print("=" * 50)
-
+    def move_with_autopilot(self):
         percorso = [self.ship.current_sector.id]
 
         while self.ship.is_operational():
-            current_sector = self.ship.current_sector
-            next_sector = self.auto_pilot.calculate_next_move(current_sector, self.ship.fuel)
+            current = self.ship.current_sector
+            next_sector = self.auto_pilot.calculate_next_move(current, self.ship.fuel)
 
             if next_sector is None:
                 break
 
-            # Trova costo arco
-            edges = self.universe.core_graph.get_adjacent_vertices(current_sector)
-            edge = edges.head
-            fuel_cost = None
-            while edge is not None:
-                if edge.data.destination == next_sector:
-                    fuel_cost = edge.data.weight
-                    break
-                edge = edge.next
+            route_cost = self.get_route_cost(current, next_sector)
 
-            if fuel_cost is None:
+            if route_cost is None:
                 break
 
-            self.ship.move_to(next_sector, fuel_cost)
-            next_sector.scan()
-            extracted = next_sector.extract_resources()
-            self.ship.add_resources(extracted)
+            self.ship.move_to(next_sector, route_cost)
+            self.catalog.log_route(Route(next_sector, route_cost))
+            self.handle_arrival_events(next_sector)
             percorso.append(next_sector.id)
 
-        # Stampa percorso
-        print(f"\n  {' → '.join(percorso)}")
-
-    def move_with_autopilot(self):
-        current = self.ship.current_sector
-        next_sector = self.auto_pilot.calculate_next_move(current, self.ship.fuel)
-
-        if next_sector is None:
+        if len(percorso) == 1:
             print("Nessuna mossa disponibile.")
             self.ship.deduct_fuel(self.ship.fuel)
             return
 
-        route_cost = self.get_route_cost(current, next_sector)
-
-        if route_cost is None:
-            print("Errore: il settore scelto non è collegato a quello attuale.")
-            return
-
-        self.ship.move_to(next_sector, route_cost)
-        self.catalog.log_route(Route(next_sector, route_cost))
-        self.handle_arrival_events(next_sector)
-        self.print_path()
+        print(f"\n{'=' * 50}")
+        print("  PERCORSO DELL'AUTOPILOT")
+        print("=" * 50)
+        print(f"\n  {' → '.join(percorso)}")
 
     def handle_arrival_events(self, sector):
         sector.scan()
