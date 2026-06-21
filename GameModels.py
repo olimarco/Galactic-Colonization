@@ -164,7 +164,8 @@ class UniverseGraph:
                         fuel_cost = random.randint(5, 30)
                         self.add_hyperspace_route(source, dest, fuel_cost)
                         extra_edges -= 1
-            
+
+        self.ensure_connectivity()
         self.enforce_max_connections()
         
 
@@ -180,8 +181,38 @@ class UniverseGraph:
             dest = vertices.get(i + 1)
 
             if not self.are_connected(source, dest):
-                fuel_cost = random.randint(5, 30)
-                self.add_hyperspace_route(source, dest, fuel_cost)
+                if self.count_connections(source) < 5 and self.count_connections(dest) < 5:
+                    fuel_cost = random.randint(5, 30)
+                    self.add_hyperspace_route(source, dest, fuel_cost)
+
+        if not self.is_connected():
+            raise ValueError("Unable to generate a connected universe")
+
+    def is_connected(self):
+        vertices = self.core_graph.get_vertices()
+
+        if vertices.size == 0:
+            return True
+
+        visited = LinkedList()
+        to_visit = LinkedList()
+        to_visit.add(vertices.get(0))
+        current_index = 0
+
+        while current_index < to_visit.size:
+            current_sector = to_visit.get(current_index)
+            current_index += 1
+
+            if not visited.contains(current_sector):
+                visited.add(current_sector)
+                connected = self.get_connected_sectors(current_sector)
+
+                for i in range(connected.size):
+                    neighbor = connected.get(i)
+                    if not visited.contains(neighbor):
+                        to_visit.add(neighbor)
+
+        return visited.size == vertices.size
 
     def enforce_max_connections(self):
         vertices = self.core_graph.get_vertices()
