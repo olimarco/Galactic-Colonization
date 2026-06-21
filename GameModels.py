@@ -20,6 +20,21 @@ class Sector:
     def get_danger_probability(self):
         return self.danger_level
 
+    def __str__(self):
+        return self.id
+
+    def __repr__(self):
+        return (
+            self.id
+            + " (pericolo: "
+            + str(self.danger_level)
+            + ", risorse: "
+            + str(self.resources)
+            + ", visitato: "
+            + str(self.is_visited)
+            + ")"
+        )
+
 
 class Route:
     def __init__(self, destination, fuel_cost):
