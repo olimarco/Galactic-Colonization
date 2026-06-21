@@ -60,6 +60,8 @@ class Spaceship:
     
     def deduct_fuel(self, amount):
         self.fuel -= amount
+        if self.fuel < 0:
+            self.fuel = 0
     
     def add_resources(self, amount):
         self.collected_resources += amount
