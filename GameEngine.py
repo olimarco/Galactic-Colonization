@@ -97,7 +97,7 @@ class GameEngine:
             return
 
         self.ship.move_to(next_sector, route_cost)
-        self.catalog.log_route(Route(next_sector, route_cost))
+        self.catalog.log_route(Route(next_sector, route_cost), current)
         self.handle_arrival_events(next_sector)
 
     def handle_arrival_events(self, sector):
@@ -149,10 +149,15 @@ class GameEngine:
 
         for i in range(connected.size):
             sector = connected.get(i)
+            route_cost = self.get_route_cost(current, sector)
             print(
                 sector.id,
                 "- pericolo:",
                 sector.danger_level,
+                "- carburante necessario:",
+                route_cost,
+                "- risorse disponibili:",
+                sector.resources,
                 "- visitato:",
                 sector.is_visited
             )
