@@ -13,6 +13,32 @@ class GameEngine:
         self.ship = None
         self.catalog = GalacticCatalog()
         self.auto_pilot = AutoPilotAI(self.universe)
+        self.hazard_events = [
+            {
+                "name": "Tempesta solare",
+                "description": "Le radiazioni danneggiano gli scudi e consumano carburante.",
+                "fuel_loss_range": (5, 15),
+                "resource_loss_range": (0, 0)
+            },
+            {
+                "name": "Pirati spaziali",
+                "description": "Un assalto improvviso causa perdita di carburante e risorse.",
+                "fuel_loss_range": (3, 10),
+                "resource_loss_range": (5, 20)
+            },
+            {
+                "name": "Anomalia gravitazionale",
+                "description": "La nave corregge la rotta consumando carburante extra.",
+                "fuel_loss_range": (8, 18),
+                "resource_loss_range": (0, 0)
+            },
+            {
+                "name": "Campo di asteroidi",
+                "description": "Le manovre evasive disperdono parte del carico raccolto.",
+                "fuel_loss_range": (2, 8),
+                "resource_loss_range": (3, 12)
+            }
+        ]
 
     def start_game(self):
         self.universe.generate_procedural_universe(self.universe_size)
@@ -91,10 +117,26 @@ class GameEngine:
         hazard_roll = random.randint(1, 100)
 
         if hazard_roll <= danger_probability:
-            extra_fuel_cost = random.randint(1, max(1, danger_probability // 5))
-            self.ship.deduct_fuel(extra_fuel_cost)
+            event = random.choice(self.hazard_events)
+            fuel_loss = random.randint(
+                event["fuel_loss_range"][0],
+                event["fuel_loss_range"][1]
+            )
+            resource_loss = random.randint(
+                event["resource_loss_range"][0],
+                event["resource_loss_range"][1]
+            )
+
+            self.ship.deduct_fuel(fuel_loss)
+            actual_resource_loss = min(resource_loss, self.ship.collected_resources)
+            self.ship.collected_resources -= actual_resource_loss
+
             print("Imprevisto nel settore:", sector.id)
-            print("Carburante perso:", extra_fuel_cost)
+            print("Evento:", event["name"])
+            print(event["description"])
+            print("Carburante perso:", fuel_loss)
+            if actual_resource_loss > 0:
+                print("Risorse perse:", actual_resource_loss)
 
     def display_scan_report(self):
         current = self.ship.current_sector
