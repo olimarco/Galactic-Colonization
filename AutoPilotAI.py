@@ -1,8 +1,8 @@
 from DataStructures import HashTable
+from GameModels import Sector
 
 class AutoPilotAI:
    
-    COSTO_MEDIO_IMPREVISTO = 12
     def __init__(self, universe):
         self.universe = universe
     
@@ -24,13 +24,13 @@ class AutoPilotAI:
             costo = arco.data.weight
 
             if costo <= fuel_left:
-                #DA CAMBIARE, NON DEVE ESSERCI SEMPRE LA PENALITà, MA DEVE ESSERE UNA PROBABILITà
-                penalita = (nodo_successivo.danger_level / 100.0) * self.COSTO_MEDIO_IMPREVISTO
-                carburante_dopo = fuel_left - costo - penalita
-        
-                # Risorse di questa mossa + le migliori risorse ottenibili da qui in poi
+                carburante_dopo = fuel_left - costo
+
+                pericolo = 1.0 - (nodo_successivo.danger_level / 100.0)
+                risorse_pesate = nodo_successivo.resources * pericolo
+
                 visitati.put(nodo_successivo.id, True)
-                risorse_totali = nodo_successivo.resources + self._backtracking(nodo_successivo, carburante_dopo, visitati)
+                risorse_totali = risorse_pesate + self._backtracking(nodo_successivo, carburante_dopo, visitati)
                 visitati.put(nodo_successivo.id, False)
 
                 if risorse_totali > miglior_risorse:
@@ -56,18 +56,19 @@ class AutoPilotAI:
             nodo_successivo = arco.data.destination
             costo = arco.data.weight
 
-            # Pruning: carburante insufficiente o settore già nel percorso
             if costo <= carburante and visitati.get(nodo_successivo.id) is not True:
-                penalita = (nodo_successivo.danger_level / 100.0) * self.COSTO_MEDIO_IMPREVISTO
-                carburante_dopo = carburante - costo - penalita
-                # Esplora ricorsivamente, poi annulla (backtrack)
-                visitati.put(nodo_successivo.id, True)
+                carburante_dopo = carburante - costo
 
-                risorse = nodo_successivo.resources + self._backtracking(nodo_successivo, carburante_dopo, visitati)
+                fattore_sicurezza = 1.0 - (nodo_successivo.danger_level / 100.0)
+                risorse_pesate = nodo_successivo.resources * fattore_sicurezza
+
+                visitati.put(nodo_successivo.id, True)
+                risorse = risorse_pesate + self._backtracking(nodo_successivo, carburante_dopo, visitati)
                 visitati.put(nodo_successivo.id, False)
 
                 if risorse > migliore:
                     migliore = risorse
+
             arco = arco.next
 
         return migliore

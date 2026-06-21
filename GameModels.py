@@ -87,11 +87,14 @@ class UniverseGraph:
         sectors = LinkedList()
 
         for i in range(size):
-            sector = Sector(
-                "S" + str(i),
-                random.randint(0, 100),
-                random.randint(0, 100)
-            )
+            if i == 0:
+                sector = Sector("S0", 0, 0)
+            else:
+                sector = Sector(
+                    "S" + str(i),
+                    random.randint(0, 100),
+                    random.randint(1, 100)
+                )
             self.add_sector(sector)
             sectors.add(sector)
 

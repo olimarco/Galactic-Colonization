@@ -47,11 +47,14 @@ class GameEngine:
         self.turn_loop()
 
     def turn_loop(self):
-        while self.ship.is_operational():
+        while True:
             print("\n--- Turno di gioco ---")
             print("Settore attuale:", self.ship.current_sector.id)
             print("Carburante:", self.ship.fuel)
             print("Risorse raccolte:", self.ship.collected_resources)
+
+            if not self.ship.is_operational():
+                print("\nCarburante esaurito! Puoi consultare il catalogo o terminare.")
 
             should_continue = self.execute_user_action()
             if not should_continue:
@@ -71,9 +74,15 @@ class GameEngine:
         if choice == "1":
             self.catalog.display_catalog()
         elif choice == "2":
-            self.display_scan_report()
+            if not self.ship.is_operational():
+                print("Carburante esaurito, impossibile scansionare.")
+            else:
+                self.display_scan_report()
         elif choice == "3":
-            self.move_with_autopilot()
+            if not self.ship.is_operational():
+                print("Carburante esaurito, impossibile muoversi.")
+            else:
+                self.move_with_autopilot()
         elif choice == "4":
             return False
         else:
@@ -82,23 +91,34 @@ class GameEngine:
         return True
 
     def move_with_autopilot(self):
-        current = self.ship.current_sector
-        next_sector = self.auto_pilot.calculate_next_move(current, self.ship.fuel)
+        percorso = [self.ship.current_sector.id]
 
-        if next_sector is None:
+        while self.ship.is_operational():
+            current = self.ship.current_sector
+            next_sector = self.auto_pilot.calculate_next_move(current, self.ship.fuel)
+
+            if next_sector is None:
+                break
+
+            route_cost = self.get_route_cost(current, next_sector)
+
+            if route_cost is None:
+                break
+
+            self.ship.move_to(next_sector, route_cost)
+            self.catalog.log_route(Route(next_sector, route_cost), current)
+            self.handle_arrival_events(next_sector)
+            percorso.append(next_sector.id)
+
+        if len(percorso) == 1:
             print("Nessuna mossa disponibile.")
             self.ship.deduct_fuel(self.ship.fuel)
             return
 
-        route_cost = self.get_route_cost(current, next_sector)
-
-        if route_cost is None:
-            print("Errore: il settore scelto non è collegato a quello attuale.")
-            return
-
-        self.ship.move_to(next_sector, route_cost)
-        self.catalog.log_route(Route(next_sector, route_cost), current)
-        self.handle_arrival_events(next_sector)
+        print(f"\n{'=' * 50}")
+        print("  PERCORSO DELL'AUTOPILOT")
+        print("=" * 50)
+        print(f"\n  {' -> '.join(percorso)}")
 
     def handle_arrival_events(self, sector):
         sector.scan()
