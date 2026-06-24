@@ -17,9 +17,8 @@ from GameModels import Route, Spaceship, UniverseGraph
 
 
 SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 760
+SCREEN_HEIGHT = 800
 FPS = 30
-AUTO_STEP_MS = 1400
 
 BLACK = (12, 12, 18)
 PANEL = (25, 28, 40)
@@ -54,18 +53,23 @@ class GalacticColonizationUI:
     def __init__(self):
         pygame.init()
         pygame.display.set_caption("Galactic Colonization")
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        
+        self.is_fullscreen = False
+        self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+        self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Courier New", 18, bold=True)
         self.small_font = pygame.font.SysFont("Courier New", 14, bold=True)
         self.big_font = pygame.font.SysFont("Courier New", 30, bold=True)
+        
         self.buttons = [
-            PixelButton((840, 665, 190, 34), "AVVIA", self.start_simulation),
-            PixelButton((1050, 665, 190, 34), "PAUSA", self.pause_simulation),
-            PixelButton((840, 710, 190, 34), "NUOVA", self.new_game),
-            PixelButton((1050, 710, 190, 34), "RIEPILOGO", self.toggle_catalog),
+            PixelButton((840, 665, 190, 34), "PROSEGUI", self.autopilot_step),
+            PixelButton((1050, 665, 190, 34), "SCANSIONE", self.manual_scan),
+            PixelButton((840, 710, 190, 34), "CATALOGO", self.toggle_catalog),
+            PixelButton((1050, 710, 190, 34), "NUOVA", self.new_game),
         ]
-        self.start_button = PixelButton((520, 625, 240, 52), "AVVIA", self.start_from_cover)
+        self.start_button = PixelButton((520, 625, 240, 52), "INIZIA", self.start_from_cover)
         self.screen_mode = "cover"
         self.cover_image = self.load_cover_image()
         self.show_catalog = False
@@ -98,22 +102,27 @@ class GalacticColonizationUI:
 
     def start_from_cover(self):
         self.screen_mode = "game"
-        self.start_simulation()
 
     def new_game(self):
-        self.universe = UniverseGraph(100)
-        self.universe.generate_procedural_universe(10)
-        self.ship = Spaceship(self.universe.launch_point, 100)
+        num_sectors = random.randint(10, 30)
+        
+        self.universe = UniverseGraph(num_sectors)
+        self.universe.generate_procedural_universe(num_sectors)
+      
+        base_fuel = num_sectors * 3.5
+        variance = base_fuel * random.uniform(-0.2, 0.2)
+        initial_fuel = int(base_fuel + variance)
+        
+        self.ship = Spaceship(self.universe.launch_point, initial_fuel)
+        
         self.catalog = GalacticCatalog()
         self.auto_pilot = AutoPilotAI(self.universe)
         self.events = []
         self.scan_results = []
         self.resources_by_sector = {}
-        self.is_running = False
         self.finished = False
         self.summary_opened = False
         self.show_catalog = False
-        self.last_step_time = 0
         self.total_turns = 0
         self.last_route = None
         self.hazard_events = [
@@ -124,19 +133,9 @@ class GalacticColonizationUI:
         ]
         self.calculate_positions()
         self.handle_arrival(self.ship.current_sector)
-        self.scan_sector(add_log=False)
-        self.log("Pronto. Premi AVVIA per iniziare la simulazione.")
-
-    def start_simulation(self):
-        if not self.finished:
-            self.show_catalog = False
-            self.is_running = True
-            self.last_step_time = 0
-            self.log("Simulazione avviata.")
-
-    def pause_simulation(self):
-        self.is_running = False
-        self.log("Simulazione in pausa.")
+        
+        self.log(f"Gen: {num_sectors} galassie. Fuel iniziale: {initial_fuel}.")
+        self.log("Sistema pronto. Scegli un'azione.")
 
     def calculate_positions(self):
         vertices = self.universe.core_graph.get_vertices()
@@ -183,59 +182,68 @@ class GalacticColonizationUI:
         if actual_resource_loss > 0:
             self.log("-" + str(actual_resource_loss) + " risorse")
 
-    def scan_sector(self, add_log=True):
+    def manual_scan(self):
+        if self.finished:
+            return
+            
         current = self.ship.current_sector
         connected = self.universe.get_connected_sectors(current)
         self.scan_results = []
+        unvisited_count = 0
 
         for i in range(connected.size):
             sector = connected.get(i)
-            self.scan_results.append((sector, self.get_route_cost(current, sector)))
+            self.scan_results.append(sector)
+            if not sector.is_visited:
+                unvisited_count += 1
 
-        if add_log:
-            self.log("Analisi rotte da " + current.id + " completata.")
+        self.log(f"Scansione: {unvisited_count} settori ignoti rilevati.")
 
     def autopilot_step(self):
+        if self.finished:
+            self.open_summary_once()
+            return
+            
         if not self.ship.is_operational():
             self.finished = True
-            self.is_running = False
             self.open_summary_once()
-            self.log("Simulazione terminata: carburante esaurito.")
+            self.log("Esplorazione terminata: carburante esaurito.")
             return
 
         current = self.ship.current_sector
+        
         next_sector = self.auto_pilot.calculate_next_move(current, self.ship.fuel)
 
         if next_sector is None:
             self.ship.deduct_fuel(self.ship.fuel)
             self.finished = True
-            self.is_running = False
             self.open_summary_once()
-            self.log("Simulazione terminata: nessuna rotta sostenibile.")
+            self.log("Esplorazione terminata: nessuna rotta sostenibile.")
             return
 
         route_cost = self.get_route_cost(current, next_sector)
         if route_cost is None:
             self.finished = True
-            self.is_running = False
             self.open_summary_once()
-            self.log("Simulazione terminata: rotta non trovata.")
+            self.log("Esplorazione terminata: rotta non trovata.")
             return
 
         self.ship.move_to(next_sector, route_cost)
         self.catalog.log_route(Route(next_sector, route_cost), current)
         self.last_route = (current.id, next_sector.id)
         self.total_turns += 1
-        self.log("Turno " + str(self.total_turns) + ": " + current.id + " -> " + next_sector.id)
+        
+        self.log(f"Turno {self.total_turns}: Rotta verso {next_sector.id}")
         self.log("Consumo rotta: -" + str(route_cost) + " carburante")
+        
         self.handle_arrival(next_sector)
-        self.scan_sector(add_log=False)
-
+        
+        self.scan_results = []
+        
         if not self.ship.is_operational():
             self.finished = True
-            self.is_running = False
             self.open_summary_once()
-            self.log("Simulazione terminata: carburante esaurito.")
+            self.log("Esplorazione terminata: carburante esaurito.")
 
     def open_summary_once(self):
         if not self.summary_opened:
@@ -244,6 +252,13 @@ class GalacticColonizationUI:
 
     def toggle_catalog(self):
         self.show_catalog = not self.show_catalog
+
+    def toggle_fullscreen(self):
+        self.is_fullscreen = not self.is_fullscreen
+        if self.is_fullscreen:
+            self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+        else:
+            self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 
     def get_route_cost(self, source, destination):
         edges = self.universe.core_graph.get_adjacent_vertices(source)
@@ -267,10 +282,20 @@ class GalacticColonizationUI:
         running = True
 
         while running:
-            mouse_pos = pygame.mouse.get_pos()
+            window_size = self.window.get_size()
+            real_mouse_pos = pygame.mouse.get_pos()
+            
+            mouse_pos = (
+                int(real_mouse_pos[0] * SCREEN_WIDTH / window_size[0]) if window_size[0] > 0 else 0,
+                int(real_mouse_pos[1] * SCREEN_HEIGHT / window_size[1]) if window_size[1] > 0 else 0
+            )
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.VIDEORESIZE:
+                    if not self.is_fullscreen:
+                        self.window = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                 elif event.type == pygame.KEYDOWN:
                     self.handle_key(event.key)
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -284,25 +309,19 @@ class GalacticColonizationUI:
 
             if self.screen_mode == "game":
                 self.update_demo_mode()
-                self.update_auto_simulation()
                 self.draw(mouse_pos)
             else:
                 self.update_demo_mode()
                 self.draw_cover(mouse_pos)
+                
+            scaled_surface = pygame.transform.scale(self.screen, window_size)
+            self.window.blit(scaled_surface, (0, 0))
+            
             pygame.display.flip()
             self.clock.tick(FPS)
 
         pygame.mixer.music.stop()
         pygame.quit()
-
-    def update_auto_simulation(self):
-        if not self.is_running or self.finished:
-            return
-
-        now = pygame.time.get_ticks()
-        if self.last_step_time == 0 or now - self.last_step_time >= AUTO_STEP_MS:
-            self.last_step_time = now
-            self.autopilot_step()
 
     def update_demo_mode(self):
         if not self.demo_mode:
@@ -313,20 +332,11 @@ class GalacticColonizationUI:
         if self.demo_step == 0 and elapsed > 1200:
             self.start_from_cover()
             self.demo_step = 1
-        elif self.demo_step == 1 and elapsed > 4500:
-            self.new_game()
-            self.start_simulation()
-            self.demo_step = 2
-        elif self.demo_step == 2 and elapsed > 7500:
-            self.new_game()
-            self.start_simulation()
-            self.demo_step = 3
-        elif self.demo_step == 3 and elapsed > 10500:
-            self.new_game()
-            self.start_simulation()
-            self.demo_step = 4
 
     def handle_key(self, key):
+        if key == pygame.K_f:
+            self.toggle_fullscreen()
+            
         if self.screen_mode == "cover":
             if key in (pygame.K_SPACE, pygame.K_RETURN):
                 self.start_from_cover()
@@ -335,10 +345,9 @@ class GalacticColonizationUI:
         if key == pygame.K_n:
             self.new_game()
         elif key == pygame.K_SPACE:
-            if self.is_running:
-                self.pause_simulation()
-            else:
-                self.start_simulation()
+            self.autopilot_step()
+        elif key == pygame.K_s:
+            self.manual_scan()
         elif key == pygame.K_c:
             self.toggle_catalog()
 
@@ -353,7 +362,7 @@ class GalacticColonizationUI:
         self.screen.blit(overlay, (0, 0))
 
         title = self.big_font.render("GALACTIC COLONIZATION", False, GREEN)
-        subtitle = self.font.render("Simulazione automatica di esplorazione", False, WHITE)
+        subtitle = self.font.render("Analisi a turni di Esplorazione Spaziale", False, WHITE)
         self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 520)))
         self.screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, 570)))
         self.start_button.draw(self.screen, self.font, mouse_pos)
@@ -372,7 +381,7 @@ class GalacticColonizationUI:
     def draw_header(self):
         title = self.big_font.render("GALACTIC COLONIZATION", False, GREEN)
         self.screen.blit(title, (30, 22))
-        subtitle = self.small_font.render("Simulazione automatica di esplorazione galattica", False, CYAN)
+        subtitle = self.small_font.render("Analisi a turni di esplorazione galattica", False, CYAN)
         self.screen.blit(subtitle, (34, 58))
 
     def draw_map(self):
@@ -446,27 +455,27 @@ class GalacticColonizationUI:
         if self.finished:
             status = "TERMINATA"
             status_color = RED
-        elif self.is_running:
-            status = "IN CORSO"
-            status_color = GREEN
         else:
-            status = "IN ATTESA"
+            status = "ATTESA COMANDI"
             status_color = YELLOW
         self.text("STATO: " + status, 865, 246, status_color)
         self.text("TURNI: " + str(self.total_turns), 865, 278, WHITE)
 
         pygame.draw.line(self.screen, GRAY, (865, 322), (1225, 322), 2)
-        self.text("ROTTE DISPONIBILI", 865, 345, YELLOW)
+        
+        self.text("DATI SCANSIONE SETTORE", 865, 345, YELLOW)
         y = 385
         if len(self.scan_results) == 0:
-            self.text("Nessun dato.", 865, y, GRAY)
+            self.text("Nessun dato. Effettuare scansione.", 865, y, GRAY)
         else:
-            for sector, cost in self.scan_results[:4]:
-                color = GREEN if sector.is_visited else WHITE
-                row = sector.id + "  fuel " + str(cost) + "  pericolo " + str(sector.danger_level)
-                self.text(row, 865, y, color, self.small_font)
-                y += 26
-                self.text("risorse disponibili: " + str(sector.resources), 890, y, CYAN, self.small_font)
+            unvisited_count = sum(1 for s in self.scan_results if not s.is_visited)
+            self.text(f"Galassie collegate ignote: {unvisited_count}", 865, y, CYAN, self.small_font)
+            y += 28
+            for sector in self.scan_results[:6]:
+                status_color = WHITE if sector.is_visited else GREEN
+                status_text = "VISITATO" if sector.is_visited else "IGNOTO"
+                row = f"{sector.id} [{status_text}] | Pericolo: {sector.danger_level}%"
+                self.text(row, 865, y, status_color, self.small_font)
                 y += 24
 
     def draw_event_panel(self):
@@ -485,14 +494,14 @@ class GalacticColonizationUI:
         for button in self.buttons:
             button.draw(self.screen, self.font, mouse_pos)
 
-        hint = self.small_font.render("Spazio avvia/pausa | N nuova | C riepilogo", False, GRAY)
-        self.screen.blit(hint, (845, 748))
+        hint = self.small_font.render("Spazio: prosegui | S: scansione | C: catalogo | F: schermo intero", False, GRAY)
+        self.screen.blit(hint, (720, 755))
 
     def draw_catalog_overlay(self):
         overlay = pygame.Rect(250, 115, 780, 520)
         pygame.draw.rect(self.screen, BLACK, overlay)
         pygame.draw.rect(self.screen, CYAN, overlay, 4)
-        self.text("RIEPILOGO PARTITA", 285, 145, YELLOW)
+        self.text("CATALOGO GALATTICO", 285, 145, YELLOW)
         self.text("Turni: " + str(self.total_turns), 285, 185, WHITE)
         self.text("Risorse a bordo: " + str(self.ship.collected_resources), 430, 185, CYAN)
         self.text("Carburante finale: " + str(self.ship.fuel), 695, 185, RED if self.ship.fuel <= 0 else GREEN)
@@ -507,7 +516,7 @@ class GalacticColonizationUI:
             self.text(row, 285, y, WHITE, self.small_font)
             y += 28
 
-        self.text("ROTTE PERCORSE", 645, 295, CYAN)
+        self.text("ROTTE SCOPERTE", 645, 295, CYAN)
         y = 325
         current = self.catalog.known_routes.head
         shown = 0
@@ -515,13 +524,13 @@ class GalacticColonizationUI:
             route = current.data
             source = getattr(route, "source", None)
             source_id = source.id if source is not None else "?"
-            row = source_id + " -> " + route.get_destination().id + " | " + str(route.get_cost())
+            row = source_id + " -> " + route.get_destination().id + " | Costo: " + str(route.get_cost())
             self.text(row, 645, y, WHITE, self.small_font)
             y += 28
             shown += 1
             current = current.next
 
-        self.text("Premi NUOVA per generare un'altra simulazione.", 285, 590, GRAY, self.small_font)
+        self.text("Premi NUOVA per generare un'altra esplorazione.", 285, 590, GRAY, self.small_font)
 
     def visited_sectors(self):
         sectors = []
