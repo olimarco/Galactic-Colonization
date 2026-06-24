@@ -1,0 +1,9 @@
+[project]
+name = "progetto-esame-galactic-colonization-boh"
+version = "0.1.0"
+description = "Galactic Colonization – an algorithms & data-structures exam project"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pygame>=2.6",
+]
